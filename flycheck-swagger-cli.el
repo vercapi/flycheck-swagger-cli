@@ -58,7 +58,7 @@ See URL `https://github.com/BigstickCarpet/swagger-cli'."
   :predicate
   (lambda ()
     (string-match
-     "\\(.\\|\n\\)*\\([[:space:]]\\|\"\\|\\'\\)*swagger\\([[:space:]]\\|\"\\|\\'\\)*:[[:space:]]*[\"\\']2.0[\"\\'].*"
+     "[\"]\\{0,1\\}\\(openapi\\|swagger\\)[\"]\\{0,1\\}:[[:space:]]*\"[23].0[^\"]*\""
      ;; Need to avoid stack overflow for multi-line regex
      (buffer-substring 1 (min (buffer-size)
                               flycheck-swagger-cli-predicate-regexp-match-limit))))
