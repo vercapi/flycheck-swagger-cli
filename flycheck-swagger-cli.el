@@ -45,16 +45,15 @@
   :prefix "flycheck-swagger-cli-")
 
 (defcustom flycheck-swagger-cli-predicate-regexp-match-limit 4000
-  "Defines the number of characters that will be scanned at the beginning of a
-buffer to find the swagger 2.0 element."
+  "Defines the number of characters that will be scanned at the beginning of a buffer to find the swagger 2.0 element."
   :type 'integer
   :group 'flycheck-swagger-cli)
 
 ;;;###autoload
 (flycheck-define-checker swagger-cli
-  "A checker that uses swagger-cli to validate OpenAPI 2 and Swagger files.
+  "A checker that uses swagger-cli to validate OpenAPI 2/3 and Swagger files.
 See URL `https://github.com/BigstickCarpet/swagger-cli'."
-  :command ("swagger-cli" "validate" source-original)
+  :command ("swagger-cli" "validate" source)
   :predicate
   (lambda ()
     (string-match
@@ -63,54 +62,25 @@ See URL `https://github.com/BigstickCarpet/swagger-cli'."
      (buffer-substring 1 (min (buffer-size)
                               flycheck-swagger-cli-predicate-regexp-match-limit))))
   :error-patterns
-  (;; js-yaml error with position
-   (error line-start
-          "YAMLException: "
+  ((error line-start
+          "Error parsing "
+          (file-name)
+          ": "
           (message)
-          " at line " line ", column " column ":"
-          line-end)
-   ;; js-yaml error without position
-   (error line-start "YAMLException: " (message) ": " (one-or-more not-newline) line-end)
-;;   (error line-start
-;;          "YAMLException: "
-;;          (and (one-or-more (or not-newline "\n")) "^"))
-   (error line-start
-          "SyntaxError: "
-          (message
-           (one-or-more not-newline))
-          line-end)
-   ;; Errors like "duplicated mapping key at line 63, column -692:"
-   ;; The column must be ignore, since it can be negative
-   (error line-start
-          (message
-           (not space)
-           (one-or-more not-newline))
-          " at line " line
-          (one-or-more not-newline)
-          ":"
+          "(" line ":" column ")"
           line-end)
    (error line-start
-          blank
-          blank
-          (message
-           (not space)
-           (one-or-more not-newline))
+          blank blank
+          (message (not space)
+                   (one-or-more not-newline))
           line-end))
-   ;; swagger-cli error (always contain a # symbol in the message)
-;;   (error line-start
-;;          "  "
-;;          (message (optional (one-or-more not-newline))
-;;                   (one-or-more "#")
-;;                   (one-or-more not-newline))
-;;          line-end))
   :error-filter
   ;; Add line number 1 if the error has no line number
   (lambda (errors)
-    (let ((errors (flycheck-sanitize-errors errors)))
-      (dolist (err errors)
-        (unless (flycheck-error-line err)
-          (setf (flycheck-error-line err) 1)))
-      errors))
+    (dolist (err errors)
+      (unless (flycheck-error-line err)
+        (setf (flycheck-error-line err) 1)))
+    errors)
   :modes (json-mode openapi-yaml-mode yaml-mode))
 
 (add-to-list 'flycheck-checkers 'swagger-cli)
